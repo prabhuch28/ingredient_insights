@@ -29,15 +29,17 @@ export type HighlightConcerningIngredientsInput = z.infer<
 
 const HighlightConcerningIngredientsOutputSchema = z.object({
   summary: z.string().describe('A high-level summary of the ingredient analysis.'),
-  highlights: z.array(
-    z.object({
-      ingredient: z.string().describe('The name of the ingredient.'),
-      reason: z.string().describe('Why the ingredient might be concerning.'),
-      confidence: z
-        .enum(['high', 'medium', 'low'])
-        .describe('The confidence level of the AI in its assessment.'),
-    })
-  ).describe('An array of highlighted ingredients and their explanations.'),
+  highlights: z
+    .array(
+      z.object({
+        ingredient: z.string().describe('The name of the ingredient.'),
+        reason: z.string().describe('Why the ingredient might be concerning.'),
+        confidence: z
+          .enum(['high', 'medium', 'low'])
+          .describe('The confidence level of the AI in its assessment.'),
+      })
+    )
+    .describe('An array of highlighted ingredients and their explanations.'),
   uncertaintyNote: z
     .string()
     .nullable()
@@ -62,8 +64,11 @@ const highlightConcerningIngredientsPrompt = ai.definePrompt({
   output: {schema: HighlightConcerningIngredientsOutputSchema},
   prompt: `You are an AI assistant designed to analyze food ingredient lists and highlight potentially concerning ingredients.
 
-  You will be given either a text list of ingredients, or an image of a food label. If you receive an image, extract the ingredient list from it first.
-  Then, identify any ingredients that might be of concern to health-conscious users. Explain why each ingredient might be concerning and provide a confidence level for your assessment (high, medium, or low).
+  You will be given either a text list of ingredients, or an image of a food label. 
+
+  If you receive an image, your primary goal is to locate and extract the **ingredient list**. The ingredient list might be near the 'Nutrition Facts' panel, but it is a distinct section. Look for a heading like "Ingredients:", "INGREDIENTS", or similar. If you cannot find an ingredient list, state that in the summary and uncertainty note. Do not analyze the nutrition facts table.
+
+  After extracting the ingredient list (or if you were given text), identify any ingredients that might be of concern to health-conscious users. Explain why each ingredient might be concerning and provide a confidence level for your assessment (high, medium, or low).
 
   If there are uncertainties in your analysis, clearly state them in the uncertaintyNote field. Suggest possible next actions based on the analysis.
 
