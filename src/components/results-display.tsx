@@ -11,6 +11,7 @@ import {
   Plus,
   Minus,
   Equal,
+  Lightbulb,
 } from 'lucide-react';
 import {
   Accordion,
@@ -61,7 +62,7 @@ export function ResultsDisplay({
   data: HighlightConcerningIngredientsOutput;
   onReset: () => void;
 }) {
-  const isNutritionAnalysis = data.highlights.length === 0 && data.uncertaintyNote?.toLowerCase().includes('nutrition');
+  const isNutritionAnalysis = data.highlights.length === 0 && (data.summary.includes('Nutrition Facts') || data.uncertaintyNote?.toLowerCase().includes('nutrition'));
   
   const nutritionFacts = isNutritionAnalysis
     ? data.summary.split('.').filter(s => s.trim().length > 0)
@@ -154,22 +155,28 @@ export function ResultsDisplay({
       )}
 
       {data.suggestedActions.length > 0 && (
-        <section className="text-center pt-4">
-          <h3 className="text-lg font-semibold mb-3 text-neutral-200">
-            Suggested Next Steps
-          </h3>
-          <div className="flex flex-wrap gap-3 justify-center">
-            {data.suggestedActions.map((action, index) => (
-              <Button
-                key={index}
-                variant="link"
-                className="text-accent hover:text-accent/80"
-              >
-                {action}
-              </Button>
-            ))}
-          </div>
-        </section>
+        <section>
+        <h2 className="text-xl font-bold mb-4 text-neutral-200">
+          Suggested Next Steps
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {data.suggestedActions.map((action, index) => (
+            <Card
+              key={index}
+              className="bg-card/60 hover:bg-card/90 transition-colors border-primary/20 hover:border-primary/50 cursor-pointer"
+            >
+              <CardContent className="p-4 flex items-start gap-4">
+                <div className="flex-shrink-0 mt-1">
+                  <Lightbulb className="h-5 w-5 text-accent" />
+                </div>
+                <p className="text-sm font-medium text-neutral-200">
+                  {action}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
       )}
     </div>
   );
