@@ -38,9 +38,11 @@ export async function analyzeIngredients(
       };
     }
 
+    const photoDataUri = (image && image.size > 0) ? await toDataURI(image) : undefined;
+
     const result = await highlightConcerningIngredients({
       ingredientsText: ingredients,
-      photoDataUri: image && image.size > 0 ? await toDataURI(image) : undefined,
+      photoDataUri: photoDataUri,
     });
 
     if (!result) {
