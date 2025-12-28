@@ -1,11 +1,10 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, type RefObject } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { Sparkles, Camera, Upload, SwitchCamera } from 'lucide-react';
-import { LoadingAnimation } from './loading-animation';
+import { Sparkles, Camera, Upload } from 'lucide-react';
 import { Logo } from './icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from './ui/card';
@@ -14,8 +13,10 @@ import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 
 export function IngredientForm({
   formAction,
+  formRef,
 }: {
   formAction: (payload: FormData) => void;
+  formRef: RefObject<HTMLFormElement>;
 }) {
   const { pending } = useFormStatus();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -25,7 +26,6 @@ export function IngredientForm({
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
   const [capturedImageFile, setCapturedImageFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -63,11 +63,21 @@ export function IngredientForm({
       };
     }
   }, [isCapturing, toast]);
+  
+  useEffect(() => {
+     if (!pending) {
+       setImagePreview(null);
+       setCapturedImageFile(null);
+       if (fileInputRef.current) {
+         fileInputRef.current.value = '';
+       }
+     }
+   }, [pending]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setCapturedImageFile(null); // Clear captured image if a file is selected
+      setCapturedImageFile(null); 
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -88,13 +98,11 @@ export function IngredientForm({
         const dataUri = canvas.toDataURL('image/png');
         setImagePreview(dataUri);
         
-        // Convert data URI to file and set it in state
         fetch(dataUri)
           .then(res => res.blob())
           .then(blob => {
             const file = new File([blob], "capture.png", { type: "image/png" });
             setCapturedImageFile(file);
-            // Clear file input if a capture is made
             if (fileInputRef.current) {
               fileInputRef.current.value = "";
             }
@@ -109,14 +117,6 @@ export function IngredientForm({
       formData.set('image', capturedImageFile);
     }
     formAction(formData);
-  }
-
-  if (pending) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <LoadingAnimation />
-      </div>
-    );
   }
 
   return (
