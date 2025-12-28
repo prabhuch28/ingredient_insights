@@ -15,7 +15,13 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const HighlightConcerningIngredientsInputSchema = z.object({
-  ingredientsText: z.string().describe('The ingredient list text to analyze.'),
+  ingredientsText: z.string().optional().describe('The ingredient list text to analyze.'),
+  photoDataUri: z
+    .string()
+    .optional()
+    .describe(
+      "A photo of a food label, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
 });
 export type HighlightConcerningIngredientsInput = z.infer<
   typeof HighlightConcerningIngredientsInputSchema
@@ -56,7 +62,8 @@ const highlightConcerningIngredientsPrompt = ai.definePrompt({
   output: {schema: HighlightConcerningIngredientsOutputSchema},
   prompt: `You are an AI assistant designed to analyze food ingredient lists and highlight potentially concerning ingredients.
 
-  Given the following ingredient list, identify any ingredients that might be of concern to health-conscious users. Explain why each ingredient might be concerning and provide a confidence level for your assessment (high, medium, or low).
+  You will be given either a text list of ingredients, or an image of a food label. If you receive an image, extract the ingredient list from it first.
+  Then, identify any ingredients that might be of concern to health-conscious users. Explain why each ingredient might be concerning and provide a confidence level for your assessment (high, medium, or low).
 
   If there are uncertainties in your analysis, clearly state them in the uncertaintyNote field. Suggest possible next actions based on the analysis.
 
@@ -74,8 +81,15 @@ const highlightConcerningIngredientsPrompt = ai.definePrompt({
     "suggestedActions": ["string"]
   \}
 
+  {{#if ingredientsText}}
   Ingredient List:
-  {{ingredientsText}}`,
+  {{ingredientsText}}
+  {{/if}}
+
+  {{#if photoDataUri}}
+  Food Label Photo:
+  {{media url=photoDataUri}}
+  {{/if}}`,
 });
 
 const highlightConcerningIngredientsFlow = ai.defineFlow(

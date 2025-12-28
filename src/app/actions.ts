@@ -4,12 +4,11 @@ import {
   highlightConcerningIngredients,
   type HighlightConcerningIngredientsOutput,
 } from '@/ai/flows/highlight-concerning-ingredients';
-import { z } from 'zod';
+import {z} from 'zod';
 
 const inputSchema = z.object({
-  ingredients: z
-    .string()
-    .min(3, { message: 'Please enter a list of ingredients.' }),
+  ingredients: z.string().optional(),
+  image: z.instanceof(File).optional(),
 });
 
 export type FormState = {
@@ -18,26 +17,48 @@ export type FormState = {
   data?: HighlightConcerningIngredientsOutput;
 };
 
+async function toDataURI(image: File) {
+  const imageBuffer = await image.arrayBuffer();
+  const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+  return `data:${image.type};base64,${imageBase64}`;
+}
+
 export async function analyzeIngredients(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   try {
     const validatedFields = inputSchema.safeParse({
-      ingredients: formData.get('ingredients'),
+      ingredients: formData.get('ingredients') || undefined,
+      image: formData.get('image') || undefined,
     });
 
     if (!validatedFields.success) {
       return {
         type: 'error',
-        message:
-          validatedFields.error.flatten().fieldErrors.ingredients?.[0] ||
-          'Invalid input.',
+        message: 'Invalid input.',
+      };
+    }
+
+    const {ingredients, image} = validatedFields.data;
+
+    if (!ingredients && !image) {
+      return {
+        type: 'error',
+        message: 'Please enter ingredients or upload an image.',
+      };
+    }
+    
+    if (image && image.size === 0) {
+      return {
+        type: 'error',
+        message: 'Please enter ingredients or upload an image.',
       };
     }
 
     const result = await highlightConcerningIngredients({
-      ingredientsText: validatedFields.data.ingredients,
+      ingredientsText: ingredients,
+      photoDataUri: image ? await toDataURI(image) : undefined,
     });
 
     if (!result) {
