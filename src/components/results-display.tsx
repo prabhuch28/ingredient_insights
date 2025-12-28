@@ -50,7 +50,7 @@ export function ResultsDisplay({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Analyze Another
         </Button>
-        <Card className="bg-card/30 backdrop-blur-sm border-primary/20 shadow-lg">
+        <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl font-bold">
               <Bot className="h-8 w-8 text-accent" />
@@ -73,12 +73,12 @@ export function ResultsDisplay({
               <AccordionItem
                 value={`item-${index}`}
                 key={index}
-                className="bg-card/30 backdrop-blur-sm border-primary/20 rounded-xl overflow-hidden"
+                className="bg-card/80 backdrop-blur-sm border-border rounded-xl overflow-hidden"
               >
                 <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
                   <span className="text-left">{highlight.ingredient}</span>
                 </AccordionTrigger>
-                <AccordionContent className="p-4 pt-0 space-y-4 border-t border-primary/20">
+                <AccordionContent className="p-4 pt-0 space-y-4 border-t border-border">
                   <div>
                     <h4 className="font-semibold text-neutral-300 mb-1">
                       Why it matters

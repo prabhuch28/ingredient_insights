@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    --background: 233 64% 30%;
+    --background: 222 84% 4.9%;
     --foreground: 0 0% 98%;
-    --card: 233 60% 35%;
+    --card: 222 84% 7%;
     --card-foreground: 0 0% 98%;
-    --popover: 233 64% 25%;
+    --popover: 222 84% 4.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 231 48% 48%;
+    --primary: 285 90% 59%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 233 50% 40%;
+    --secondary: 222 84% 10%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 233 50% 40%;
+    --muted: 222 84% 10%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 261 100% 80%;
-    --accent-foreground: 233 64% 10%;
+    --accent: 285 90% 59%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 233 50% 45%;
-    --input: 233 50% 40%;
-    --ring: 261 100% 80%;
+    --border: 222 84% 10%;
+    --input: 222 84% 10%;
+    --ring: 285 90% 59%;
     --radius: 0.8rem;
   }
  
   .dark {
-    --background: 233 64% 30%;
+    --background: 222 84% 4.9%;
     --foreground: 0 0% 98%;
-    --card: 233 60% 35%;
+    --card: 222 84% 7%;
     --card-foreground: 0 0% 98%;
-    --popover: 233 64% 25%;
+    --popover: 222 84% 4.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 231 48% 48%;
+    --primary: 285 90% 59%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 233 50% 40%;
+    --secondary: 222 84% 10%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 233 50% 40%;
+    --muted: 222 84% 10%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 261 100% 80%;
-    --accent-foreground: 233 64% 10%;
+    --accent: 285 90% 59%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 233 50% 45%;
-    --input: 233 50% 40%;
-    --ring: 261 100% 80%;
+    --border: 222 84% 10%;
+    --input: 222 84% 10%;
+    --ring: 285 90% 59%;
   }
 }
 
@@ -55,6 +55,5 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: radial-gradient(circle at top, hsl(233, 64%, 35%), hsl(var(--background)));
   }
 }
