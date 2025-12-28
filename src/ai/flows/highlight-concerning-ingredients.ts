@@ -62,39 +62,41 @@ const highlightConcerningIngredientsPrompt = ai.definePrompt({
   name: 'highlightConcerningIngredientsPrompt',
   input: {schema: HighlightConcerningIngredientsInputSchema},
   output: {schema: HighlightConcerningIngredientsOutputSchema},
-  prompt: `You are an AI assistant designed to analyze food ingredient lists and highlight potentially concerning ingredients.
+  prompt: `You are an AI assistant designed to analyze food labels. You can analyze either an ingredient list or a nutrition facts table.
 
-  You will be given either a text list of ingredients, or an image of a food label. 
+You will be given either a text list of ingredients, or an image of a food label.
 
-  If you receive an image, your primary goal is to locate and extract the **ingredient list**. The ingredient list might be near the 'Nutrition Facts' panel, but it is a distinct section. Look for a heading like "Ingredients:", "INGREDIENTS", or similar. If you cannot find an ingredient list, state that in the summary and uncertainty note. Do not analyze the nutrition facts table.
+If you receive an image:
+1.  **Prioritize the Ingredient List:** Your primary goal is to find and analyze the ingredient list. Look for a heading like "Ingredients:", "INGREDIENTS", or similar.
+2.  **Analyze Ingredients:** If you find an ingredient list, identify any ingredients that might be of concern to health-conscious users. Explain why each ingredient might be concerning and provide a confidence level for your assessment (high, medium, or low).
+3.  **Fallback to Nutrition Facts:** If you **cannot** find an ingredient list, look for a "Nutrition Facts" table. If you find one, analyze its contents. Provide a summary highlighting key values like calories, fat, sugar, and sodium.
+4.  **Handle Failure:** If you cannot find an ingredient list OR a nutrition facts table, state that in the summary and uncertainty note.
 
-  After extracting the ingredient list (or if you were given text), identify any ingredients that might be of concern to health-conscious users. Explain why each ingredient might be concerning and provide a confidence level for your assessment (high, medium, or low).
+If you are given a text list of ingredients, analyze it for concerning ingredients as described in step 2.
 
-  If there are uncertainties in your analysis, clearly state them in the uncertaintyNote field. Suggest possible next actions based on the analysis.
+Output a JSON object in the following format:
+\{
+  "summary": "High-level summary of the analysis (either ingredients or nutrition facts)",
+  "highlights": [ // Populate this only if analyzing an ingredient list
+    \{
+      "ingredient": "Ingredient name",
+      "reason": "Why it matters",
+      "confidence": "high | medium | low"
+    \}
+  ],
+  "uncertaintyNote": "string or null",
+  "suggestedActions": ["string"]
+\}
 
-  Output a JSON object in the following format:
-  \{
-    "summary": "High-level summary of the ingredient analysis",
-    "highlights": [
-      \{
-        "ingredient": "Ingredient name",
-        "reason": "Why it matters",
-        "confidence": "high | medium | low"
-      \}
-    ],
-    "uncertaintyNote": "string or null",
-    "suggestedActions": ["string"]
-  \}
+{{#if ingredientsText}}
+Ingredient List:
+{{ingredientsText}}
+{{/if}}
 
-  {{#if ingredientsText}}
-  Ingredient List:
-  {{ingredientsText}}
-  {{/if}}
-
-  {{#if photoDataUri}}
-  Food Label Photo:
-  {{media url=photoDataUri}}
-  {{/if}}`,
+{{#if photoDataUri}}
+Food Label Photo:
+{{media url=photoDataUri}}
+{{/if}}`,
 });
 
 const highlightConcerningIngredientsFlow = ai.defineFlow(
