@@ -10,6 +10,8 @@ import {
   Minus,
   Equal,
   Lightbulb,
+  FileText,
+  RotateCcw,
 } from 'lucide-react';
 import {
   Accordion,
@@ -18,7 +20,8 @@ import {
   AccordionTrigger,
 } from './ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { Button } from './ui/button';
 
 const confidenceConfig = {
   high: {
@@ -55,6 +58,7 @@ const NutritionFact: React.FC<{ fact: string }> = ({ fact }) => {
 
 export function ResultsDisplay({
   data,
+  onReset,
 }: {
   data: HighlightConcerningIngredientsOutput;
   onReset: () => void;
@@ -66,13 +70,19 @@ export function ResultsDisplay({
     : [];
 
   return (
-    <div className="w-full animate-in fade-in-50 duration-500 space-y-8 py-8">
-       <div className="flex items-start gap-4">
-        <Avatar>
-          <AvatarFallback><Bot /></AvatarFallback>
-        </Avatar>
-
-        <div className="space-y-6 flex-1">
+    <div className="w-full max-w-4xl mx-auto animate-in fade-in-50 duration-500 space-y-8 px-4 py-12">
+       <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <FileText className="h-7 w-7 text-primary" />
+                <h1 className="text-2xl font-semibold text-foreground">Analysis Results</h1>
+            </div>
+            <Button variant="ghost" onClick={onReset}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                New Analysis
+            </Button>
+       </div>
+       
+       <div className="space-y-8">
           {isNutritionAnalysis ? (
             <Card className="bg-card/50">
               <CardHeader>
@@ -87,12 +97,24 @@ export function ResultsDisplay({
               </CardContent>
             </Card>
           ) : (
-            <p className="text-lg font-medium text-neutral-100 leading-relaxed pt-2">{data.summary}</p>
+             <Card className="bg-card/50">
+                <CardHeader>
+                    <CardTitle className='flex items-center gap-3'>
+                        <Avatar className='h-8 w-8'>
+                            <AvatarFallback><Bot /></AvatarFallback>
+                        </Avatar>
+                        <span>AI Summary</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-lg font-medium text-neutral-100 leading-relaxed">{data.summary}</p>
+                </CardContent>
+            </Card>
           )}
 
           {data.highlights.length > 0 && (
             <section>
-              <h2 className="text-lg font-semibold mb-3 text-neutral-200">
+              <h2 className="text-xl font-semibold mb-4 text-neutral-200">
                 Highlighted Ingredients
               </h2>
               <Accordion type="multiple" className="w-full space-y-3">
@@ -144,7 +166,7 @@ export function ResultsDisplay({
 
           {data.suggestedActions.length > 0 && (
             <section>
-              <h2 className="text-lg font-semibold mb-3 text-neutral-200">
+              <h2 className="text-xl font-semibold mb-4 text-neutral-200">
                 Suggested Next Steps
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -168,6 +190,5 @@ export function ResultsDisplay({
           )}
         </div>
       </div>
-    </div>
   );
 }
