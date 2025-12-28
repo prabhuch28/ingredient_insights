@@ -8,6 +8,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   HelpCircle,
+  Plus,
+  Minus,
+  Equal,
 } from 'lucide-react';
 import {
   Accordion,
@@ -32,6 +35,24 @@ const confidenceConfig = {
   },
 };
 
+const NutritionFact: React.FC<{ fact: string }> = ({ fact }) => {
+  const factLower = fact.toLowerCase();
+  let icon = <Equal className="text-neutral-400" />;
+  if (factLower.includes('low') || factLower.includes('good source')) {
+    icon = <Plus className="text-green-400" />;
+  } else if (factLower.includes('high') || factLower.includes('moderate')) {
+    icon = <Minus className="text-red-400" />;
+  }
+
+  return (
+    <li className="flex items-start gap-3">
+      <div className="mt-1 h-5 w-5 flex-shrink-0">{icon}</div>
+      <p className="text-neutral-200">{fact.trim()}.</p>
+    </li>
+  );
+};
+
+
 export function ResultsDisplay({
   data,
   onReset,
@@ -39,6 +60,11 @@ export function ResultsDisplay({
   data: HighlightConcerningIngredientsOutput;
   onReset: () => void;
 }) {
+  const isNutritionAnalysis = data.highlights.length === 0 && data.summary.toLowerCase().includes('nutrition');
+  const nutritionFacts = isNutritionAnalysis
+    ? data.summary.split('.').filter(s => s.trim().length > 0)
+    : [];
+
   return (
     <div className="w-full animate-in fade-in-50 duration-500 space-y-8">
       <header className="space-y-4">
@@ -58,7 +84,15 @@ export function ResultsDisplay({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-medium text-neutral-100">{data.summary}</p>
+            {isNutritionAnalysis ? (
+               <ul className="space-y-3">
+                {nutritionFacts.map((fact, index) => (
+                  <NutritionFact key={index} fact={fact} />
+                ))}
+              </ul>
+            ) : (
+              <p className="text-lg font-medium text-neutral-100">{data.summary}</p>
+            )}
           </CardContent>
         </Card>
       </header>
