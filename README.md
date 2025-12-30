@@ -214,19 +214,79 @@ Set CORS for frontend domain
 Add AI API keys
 
 🚀 Deployment
-Frontend (Vercel)
+
+This application is ready to deploy! We support multiple deployment platforms.
+
+### Quick Start
+
+Run the deployment setup script to prepare your environment:
+
+```bash
+chmod +x deploy-setup.sh
+./deploy-setup.sh
 ```
-npm run build
+
+### Deployment Options
+
+#### Frontend (Vercel) - Recommended
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
 vercel --prod
 ```
 
-Backend (Heroku / DigitalOcean)
-```
-python manage.py collectstatic
-gunicorn chatbackend.wsgi:application
+Or use the [Vercel Dashboard](https://vercel.com) to deploy directly from GitHub.
+
+#### Backend Options
+
+**Option A: Railway (Easiest)**
+1. Sign up at [railway.app](https://railway.app)
+2. Create new project from GitHub repo
+3. Add PostgreSQL database
+4. Set environment variables
+5. Deploy automatically
+
+**Option B: Render**
+1. Sign up at [render.com](https://render.com)
+2. Create new Web Service
+3. Connect your repository
+4. Configure build and start commands
+5. Add PostgreSQL database
+
+**Option C: Docker**
+```bash
+cd chat_backend
+docker build -t ingredient-insights-backend .
+docker run -p 8000:8000 ingredient-insights-backend
 ```
 
-🤝 Contributing
+### Detailed Instructions
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for comprehensive deployment guide including:
+- Step-by-step instructions for each platform
+- Environment variable configuration
+- Database setup
+- Troubleshooting tips
+- Post-deployment checklist
+
+### Environment Variables
+
+**Frontend (.env.local):**
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk authentication
+- `CLERK_SECRET_KEY` - Clerk secret
+- `NEXT_PUBLIC_API_URL` - Backend API URL
+- `GOOGLE_GENAI_API_KEY` - Gemini API key
+
+**Backend (.env):**
+- `SECRET_KEY` - Django secret key
+- `DEBUG` - Set to `False` in production
+- `ALLOWED_HOSTS` - Your domain
+- `DATABASE_URL` - PostgreSQL connection string
+- `CORS_ALLOWED_ORIGINS` - Frontend URL
+
+📄 License
 Fork the repo
 
 Create a branch
