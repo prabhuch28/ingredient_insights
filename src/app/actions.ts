@@ -1,7 +1,7 @@
 'use server';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 // --- Start of logic moved from highlight-concerning-ingredients.ts ---
 
@@ -46,8 +46,8 @@ export type HighlightConcerningIngredientsOutput = z.infer<
 
 const highlightConcerningIngredientsPrompt = ai.definePrompt({
   name: 'highlightConcerningIngredientsPrompt',
-  input: {schema: HighlightConcerningIngredientsInputSchema},
-  output: {schema: HighlightConcerningIngredientsOutputSchema},
+  input: { schema: HighlightConcerningIngredientsInputSchema },
+  output: { schema: HighlightConcerningIngredientsOutputSchema },
   prompt: `You are a friendly and knowledgeable nutrition assistant who helps people understand food ingredients in a clear, approachable way - like ChatGPT.
 
 Your goal is to provide helpful, easy-to-understand insights about food ingredients without being alarmist or overly technical. Think of yourself as a helpful friend who knows about nutrition.
@@ -98,7 +98,7 @@ const highlightConcerningIngredientsFlow = ai.defineFlow(
     outputSchema: HighlightConcerningIngredientsOutputSchema,
   },
   async input => {
-    const {output} = await highlightConcerningIngredientsPrompt(input);
+    const { output } = await highlightConcerningIngredientsPrompt(input);
     return output!;
   }
 );
@@ -112,6 +112,92 @@ async function highlightConcerningIngredients(
 
 
 // --- End of logic moved from highlight-concerning-ingredients.ts ---
+
+
+// --- Chat with AI using Gemini ---
+
+const ChatInputSchema = z.object({
+  message: z.string().describe('The user message to send to the AI.'),
+  conversationHistory: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']).describe('The role of the message sender.'),
+        content: z.string().describe('The message content.'),
+      })
+    )
+    .optional()
+    .describe('Previous conversation history for context.'),
+});
+export type ChatInput = z.infer<typeof ChatInputSchema>;
+
+const ChatOutputSchema = z.object({
+  response: z.string().describe('The AI assistant response.'),
+});
+export type ChatOutput = z.infer<typeof ChatOutputSchema>;
+
+const chatPrompt = ai.definePrompt({
+  name: 'chatPrompt',
+  input: { schema: ChatInputSchema },
+  output: { schema: ChatOutputSchema },
+  prompt: `You are a friendly and knowledgeable nutrition assistant specializing in food ingredients, nutrition, and healthy eating - like ChatGPT but focused on food and health.
+
+Your role is to:
+1. **Answer questions about ingredients** - Explain what they are, why they're used, potential concerns
+2. **Provide nutrition advice** - Help users understand nutritional information and make informed choices
+3. **Suggest healthier alternatives** - Recommend better options when asked
+4. **Be conversational and supportive** - Use natural, friendly language without being preachy
+5. **Stay on topic** - Focus on food, ingredients, nutrition, and health-related questions
+
+Guidelines:
+- Be helpful and encouraging, not alarmist
+- Explain things in simple, everyday language
+- Provide balanced, evidence-based information
+- If asked about medical conditions, remind users to consult healthcare professionals
+- If asked about topics outside food/nutrition, politely redirect to your area of expertise
+
+{{#if conversationHistory}}
+Previous conversation:
+{{#each conversationHistory}}
+{{role}}: {{content}}
+{{/each}}
+{{/if}}
+
+User: {{message}}`,
+});
+
+const chatFlow = ai.defineFlow(
+  {
+    name: 'chatFlow',
+    inputSchema: ChatInputSchema,
+    outputSchema: ChatOutputSchema,
+  },
+  async (input) => {
+    const { output } = await chatPrompt(input);
+    return output!;
+  }
+);
+
+async function chatWithAI(input: ChatInput): Promise<ChatOutput> {
+  return chatFlow(input);
+}
+
+export async function sendChatMessage(
+  message: string,
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
+): Promise<string> {
+  try {
+    const result = await chatWithAI({
+      message,
+      conversationHistory,
+    });
+    return result.response;
+  } catch (error) {
+    console.error('Chat error:', error);
+    throw new Error('Failed to get AI response. Please try again.');
+  }
+}
+
+// --- End of Chat with AI ---
 
 
 export type FormState = {
@@ -145,7 +231,7 @@ export async function analyzeIngredients(
     if (image instanceof File && image.size > 0) {
       photoDataUri = await toDataURI(image);
     }
-    
+
     const result = await highlightConcerningIngredients({
       ingredientsText: ingredients,
       photoDataUri: photoDataUri,

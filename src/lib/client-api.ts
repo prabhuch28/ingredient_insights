@@ -1,6 +1,8 @@
-import { useAuth } from '@clerk/nextjs';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Local Storage Keys
+const STORAGE_KEYS = {
+  SESSIONS: 'ingredient_insights_sessions',
+  MESSAGES: 'ingredient_insights_messages',
+} as const;
 
 export interface ChatSession {
   id: number;
@@ -26,122 +28,151 @@ export interface ChatSessionDetail extends ChatSession {
   messages: Message[];
 }
 
-class ApiClient {
-  async getAuthHeaders(token?: string) {
-    // Get the JWT token from Clerk on client side
-    const authToken = token || '';
-
-    return {
-      'Authorization': authToken ? `Bearer ${authToken}` : '',
-      'Content-Type': 'application/json',
-    };
+// Helper functions for local storage
+class LocalStorageAPI {
+  private getFromStorage<T>(key: string): T | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error(`Error reading from localStorage (${key}):`, error);
+      return null;
+    }
   }
 
-  async get(endpoint: string, token?: string) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: await this.getAuthHeaders(token),
-    });
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+  private saveToStorage<T>(key: string, data: T): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.error(`Error writing to localStorage (${key}):`, error);
+      throw new Error('Failed to save data. Storage quota may be exceeded.');
     }
-    const data = await response.json();
-    return data;
   }
 
-  async post(endpoint: string, data: any, token?: string) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: await this.getAuthHeaders(token),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
-    }
-    return response.json();
-  }
-
-  async delete(endpoint: string, token?: string) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'DELETE',
-      headers: await this.getAuthHeaders(token),
-    });
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
-    }
+  private generateId(): number {
+    return Date.now() + Math.floor(Math.random() * 1000);
   }
 
   // Chat Sessions
-  async getChatSessions(token?: string): Promise<ChatSession[]> {
-    try {
-      const data = await this.get('/api/chat/sessions/', token);
-      // Handle paginated results from Django REST Framework
-      if (data && typeof data === 'object' && 'results' in data) {
-        return data.results || [];
-      }
-      // Handle direct array response
-      if (Array.isArray(data)) {
-        return data;
-      }
-      // Fallback to empty array
-      return [];
-    } catch (error) {
-      console.error('Failed to fetch chat sessions:', error);
-      return [];
+  async getChatSessions(): Promise<ChatSession[]> {
+    const sessions = this.getFromStorage<ChatSession[]>(STORAGE_KEYS.SESSIONS);
+    return sessions || [];
+  }
+
+  async getChatSession(id: number): Promise<ChatSessionDetail> {
+    const sessions = await this.getChatSessions();
+    const session = sessions.find((s) => s.id === id);
+
+    if (!session) {
+      throw new Error(`Session ${id} not found`);
     }
+
+    const messages = await this.getMessages(id);
+
+    return {
+      ...session,
+      messages,
+    };
   }
 
-  async getChatSession(id: number, token?: string): Promise<ChatSessionDetail> {
-    return this.get(`/api/chat/sessions/${id}/`, token);
+  async createChatSession(title?: string): Promise<ChatSession> {
+    const sessions = await this.getChatSessions();
+    const now = new Date().toISOString();
+
+    const newSession: ChatSession = {
+      id: this.generateId(),
+      title: title || 'New Chat',
+      created_at: now,
+      updated_at: now,
+      message_count: 0,
+    };
+
+    sessions.unshift(newSession);
+    this.saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
+
+    return newSession;
   }
 
-  async createChatSession(title?: string, token?: string): Promise<ChatSession> {
-    return this.post('/api/chat/sessions/', { title: title || 'New Chat' }, token);
-  }
+  async deleteChatSession(id: number): Promise<void> {
+    const sessions = await this.getChatSessions();
+    const filteredSessions = sessions.filter((s) => s.id !== id);
+    this.saveToStorage(STORAGE_KEYS.SESSIONS, filteredSessions);
 
-  async deleteChatSession(id: number, token?: string) {
-    return this.delete(`/api/chat/sessions/${id}/`, token);
+    // Also delete messages for this session
+    const allMessages = this.getFromStorage<Record<number, Message[]>>(STORAGE_KEYS.MESSAGES) || {};
+    delete allMessages[id];
+    this.saveToStorage(STORAGE_KEYS.MESSAGES, allMessages);
   }
 
   // Messages
-  async getMessages(sessionId: number, token?: string): Promise<Message[]> {
-    return this.get(`/api/chat/sessions/${sessionId}/messages_list/`, token);
+  async getMessages(sessionId: number): Promise<Message[]> {
+    const allMessages = this.getFromStorage<Record<number, Message[]>>(STORAGE_KEYS.MESSAGES) || {};
+    return allMessages[sessionId] || [];
   }
 
-  async addMessage(sessionId: number, role: 'user' | 'assistant', content: string, token?: string): Promise<Message> {
-    return this.post(`/api/chat/sessions/${sessionId}/messages/`, { role, content }, token);
+  async addMessage(
+    sessionId: number,
+    role: 'user' | 'assistant',
+    content: string
+  ): Promise<Message> {
+    const allMessages = this.getFromStorage<Record<number, Message[]>>(STORAGE_KEYS.MESSAGES) || {};
+    const sessionMessages = allMessages[sessionId] || [];
+
+    const newMessage: Message = {
+      id: this.generateId(),
+      role,
+      content,
+      timestamp: new Date().toISOString(),
+    };
+
+    sessionMessages.push(newMessage);
+    allMessages[sessionId] = sessionMessages;
+    this.saveToStorage(STORAGE_KEYS.MESSAGES, allMessages);
+
+    // Update session metadata
+    const sessions = await this.getChatSessions();
+    const sessionIndex = sessions.findIndex((s) => s.id === sessionId);
+
+    if (sessionIndex !== -1) {
+      sessions[sessionIndex].message_count = sessionMessages.length;
+      sessions[sessionIndex].updated_at = newMessage.timestamp;
+      sessions[sessionIndex].last_message = {
+        content: newMessage.content,
+        timestamp: newMessage.timestamp,
+        role: newMessage.role,
+      };
+      this.saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
+    }
+
+    return newMessage;
   }
 }
 
-export const apiClient = new ApiClient();
+export const apiClient = new LocalStorageAPI();
 
-// Hook for components to use with Clerk authentication
+// Hook for components to use (keeping same interface for compatibility)
 export function useApiClient() {
-  const { getToken } = useAuth();
-
+  // No longer need Clerk auth for local storage
   return {
     getChatSessions: async () => {
-      const token = await getToken();
-      return apiClient.getChatSessions(token || undefined);
+      return apiClient.getChatSessions();
     },
     getChatSession: async (id: number) => {
-      const token = await getToken();
-      return apiClient.getChatSession(id, token || undefined);
+      return apiClient.getChatSession(id);
     },
     createChatSession: async (title?: string) => {
-      const token = await getToken();
-      return apiClient.createChatSession(title, token || undefined);
+      return apiClient.createChatSession(title);
     },
     deleteChatSession: async (id: number) => {
-      const token = await getToken();
-      return apiClient.deleteChatSession(id, token || undefined);
+      return apiClient.deleteChatSession(id);
     },
     getMessages: async (sessionId: number) => {
-      const token = await getToken();
-      return apiClient.getMessages(sessionId, token || undefined);
+      return apiClient.getMessages(sessionId);
     },
     addMessage: async (sessionId: number, role: 'user' | 'assistant', content: string) => {
-      const token = await getToken();
-      return apiClient.addMessage(sessionId, role, content, token || undefined);
+      return apiClient.addMessage(sessionId, role, content);
     },
   };
 }

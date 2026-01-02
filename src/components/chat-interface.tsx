@@ -8,7 +8,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, User, Bot } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Message } from '@/lib/api';
+import { Message } from '@/lib/client-api';
+import { sendChatMessage } from '@/app/actions';
 
 // Typewriter effect hook
 const useTypewriter = (texts: string[], speed: number = 100) => {
@@ -19,7 +20,7 @@ const useTypewriter = (texts: string[], speed: number = 100) => {
 
   useEffect(() => {
     const currentText = texts[textIndex];
-    
+
     const timeout = setTimeout(() => {
       if (!isDeleting) {
         if (charIndex < currentText.length) {
@@ -54,7 +55,7 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  
+
   const typewriterText = useTypewriter([
     "Ask me about ingredients...",
     "What's in your food?",
@@ -79,16 +80,34 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
 
     try {
       setSending(true);
+
+      // Add user message to chat
       await addMessage(sessionId, 'user', message);
+      const userMessage = message;
       setMessage('');
-      
-      // Simulate AI response (replace with actual AI integration)
-      setTimeout(async () => {
-        await addMessage(sessionId, 'assistant', 'This is a placeholder response. The AI integration will be added next.');
-      }, 1000);
-      
+
+      // Get conversation history for context
+      const conversationHistory = messages.map((msg: Message) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      // Add the new user message to history
+      conversationHistory.push({
+        role: 'user' as const,
+        content: userMessage,
+      });
+
+      // Get AI response using Gemini via server action
+      const aiResponse = await sendChatMessage(userMessage, conversationHistory);
+
+      // Add AI response to chat
+      await addMessage(sessionId, 'assistant', aiResponse);
+
     } catch (error) {
       console.error('Failed to send message:', error);
+      // Add error message to chat
+      await addMessage(sessionId, 'assistant', 'Sorry, I encountered an error. Please try again.');
     } finally {
       setSending(false);
     }
@@ -120,7 +139,7 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
           {currentSession?.title || 'Chat'}
         </CardTitle>
       </CardHeader>
-      
+
       <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 neon-scrollbar">
         <div className="space-y-4">
           {messages.length === 0 ? (
@@ -135,17 +154,15 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
                 className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`flex max-w-[80%] gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                    msg.role === 'user' ? 'chat-message-user' : 'chat-message-assistant'
-                  }`}>
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${msg.role === 'user' ? 'chat-message-user' : 'chat-message-assistant'
+                    }`}>
                     {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                   </div>
-                  
-                  <div className={`rounded-lg px-4 py-2 ${
-                    msg.role === 'user' 
-                      ? 'chat-message-user' 
-                      : 'chat-message-assistant'
-                  }`}>
+
+                  <div className={`rounded-lg px-4 py-2 ${msg.role === 'user'
+                    ? 'chat-message-user'
+                    : 'chat-message-assistant'
+                    }`}>
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     <p className="text-xs opacity-70 mt-1">
                       {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
@@ -155,7 +172,7 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
               </div>
             ))
           )}
-          
+
           {sending && (
             <div className="flex gap-3 justify-start">
               <div className="flex gap-3">
@@ -174,7 +191,7 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
           )}
         </div>
       </ScrollArea>
-      
+
       <div className="border-t p-4 glass-morphism">
         <div className="flex gap-2">
           <Textarea
@@ -185,8 +202,8 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
             className="min-h-[60px] resize-none neon-input placeholder:text-white"
             disabled={sending}
           />
-          <Button 
-            onClick={handleSendMessage} 
+          <Button
+            onClick={handleSendMessage}
             disabled={!message.trim() || sending}
             size="icon"
             className="self-end neon-button"
