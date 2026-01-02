@@ -197,10 +197,11 @@ export function ChatInterface({ sessionId }: ChatInterfaceProps) {
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             placeholder={typewriterText}
             className="min-h-[60px] resize-none neon-input placeholder:text-white"
             disabled={sending}
+            autoFocus
           />
           <Button
             onClick={handleSendMessage}
