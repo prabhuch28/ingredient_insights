@@ -82,7 +82,7 @@ export function ResultsDisplay({
 
   return (
     <motion.div
-      className="w-full max-w-4xl mx-auto space-y-8 px-4 py-12 perspective-1000"
+      className="w-full max-w-4xl mx-auto space-y-8 px-4 pt-24 pb-12 perspective-1000"
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}

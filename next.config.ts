@@ -1,7 +1,8 @@
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: 'standalone', // Required for Docker deployment
   typescript: {
     ignoreBuildErrors: true,
   },

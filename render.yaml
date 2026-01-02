@@ -1,0 +1,63 @@
+# Render Blueprint for Ingredient Insights
+# Deploy both frontend and backend with Docker
+
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: ingredient-insights-db
+    plan: free
+    region: oregon
+    databaseName: ingredient_insights
+    databaseUser: ingredient_user
+
+  # Backend (Django with Docker)
+  - type: web
+    name: ingredient-insights-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: chat_backend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: DJANGO_SETTINGS_MODULE
+        value: chatbackend.settings_production
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ingredient-insights-db
+          property: connectionString
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Set this manually to your frontend URL
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+  # Frontend (Next.js with Docker)
+  - type: web
+    name: ingredient-insights-frontend
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false  # Set this manually to your backend URL
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false  # Add your Clerk publishable key
+      - key: CLERK_SECRET_KEY
+        sync: false  # Add your Clerk secret key
+      - key: GOOGLE_GENAI_API_KEY
+        sync: false  # Add your Gemini API key
+      - key: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+        value: /sign-in
+      - key: NEXT_PUBLIC_CLERK_SIGN_UP_URL
+        value: /sign-up
+      - key: NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
+        value: /
+      - key: NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+        value: /
